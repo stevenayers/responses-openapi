@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -52,7 +57,8 @@ jobs:
       if: always()  # Run even if tests fail
       with:
         files: |
-          test-results/**/*.xml
+          test-results/*.xml
+          **/test-results/**/*.xml
         check_name: Behave Test Results - Python ${{ matrix.python-version }}
         comment_title: Behave Test Results
         comment_mode: always

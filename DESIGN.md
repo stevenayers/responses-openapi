@@ -61,7 +61,7 @@ from .core import OpenAPIMocker
 def pytest_configure(config):
     """Register the openapi_mock marker."""
     config.addinivalue_line(
-        "markers", 
+        "markers",
         "openapi_mock(spec, **options): mark test to use OpenAPI mocking"
     )
 
@@ -106,35 +106,35 @@ class SpecParser:
     def __init__(self):
         self.spec_cache = {}
         self.validators_cache = {}
-        
+
     @lru_cache(maxsize=10)
     def load_spec(self, spec_path: str) -> Spec:
         """Load and parse OpenAPI specification using openapi-core."""
         if spec_path in self.spec_cache:
             return self.spec_cache[spec_path]
-            
+
         # Load raw spec
         with open(spec_path, 'r') as f:
             if spec_path.endswith('.yaml') or spec_path.endswith('.yml'):
                 spec_dict = yaml.safe_load(f)
             else:
                 spec_dict = json.load(f)
-        
+
         # Validate spec against OpenAPI schema
         validate(spec_dict)
-        
+
         # Create openapi-core Spec object (handles $ref resolution automatically)
         spec = Spec.from_dict(spec_dict)
-        
+
         # Cache spec and validators
         self.spec_cache[spec_path] = spec
         self.validators_cache[spec_path] = {
             'request': openapi_request_validator(spec),
             'response': openapi_response_validator(spec)
         }
-        
+
         return spec
-        
+
     def get_operation(self, spec: Spec, method: str, path: str) -> Optional[Any]:
         """Get operation from spec using openapi-core."""
         try:
@@ -164,7 +164,7 @@ class RequestMatcher:
     def __init__(self, spec: Spec):
         self.spec = spec
         self.url_map = self._build_url_map()
-        
+
     def _build_url_map(self) -> Map:
         """Build Werkzeug URL map from OpenAPI paths."""
         rules = []
@@ -174,18 +174,18 @@ class RequestMatcher:
             for method in path_item.operations:
                 rules.append(Rule(werkzeug_path, endpoint=f"{method}:{path}", methods=[method.upper()]))
         return Map(rules)
-        
+
     def match_request(self, request) -> Optional[Dict[str, Any]]:
         """Match a request to an OpenAPI operation using openapi-core."""
         # Convert to OpenAPI request
         openapi_request = RequestsOpenAPIRequest(request)
-        
+
         # Find matching operation
         adapter = self.url_map.bind(request.host)
         try:
             endpoint, path_params = adapter.match(request.path, method=request.method)
             method, openapi_path = endpoint.split(':', 1)
-            
+
             return {
                 'operation': self.spec[openapi_path][method.lower()],
                 'path': openapi_path,
@@ -218,21 +218,21 @@ class ResponseGenerator:
     def __init__(self, spec: Spec, faker_locale: str = "en_US"):
         self.spec = spec
         self.faker = Faker(faker_locale)
-        
+
     def generate_response(self, operation: Any, status_code: int = 200) -> Dict[str, Any]:
         """Generate a mock response for an operation using openapi-core schemas."""
         response_spec = operation.responses.get(str(status_code), operation.responses.get("default"))
-        
+
         if not response_spec:
             return {"status": status_code}
-            
+
         # Get content from openapi-core response object
         content = response_spec.content
-        
+
         # Prefer JSON responses
         if "application/json" in content:
             media_type = content["application/json"]
-            
+
             # Use example if available
             if media_type.example is not None:
                 body = media_type.example
@@ -250,7 +250,7 @@ class ResponseGenerator:
                     body = strategy.example()
                 else:
                     body = {}
-                
+
             # Extract headers from response spec
             headers = {}
             if response_spec.headers:
@@ -260,19 +260,19 @@ class ResponseGenerator:
                     elif header_spec.schema:
                         # Generate header value from schema
                         headers[header_name] = str(self._generate_simple_value(header_spec.schema))
-                        
+
             return {
                 "json": body,
                 "status": status_code,
                 "headers": headers
             }
-            
+
     def _schema_to_dict(self, schema: Schema) -> Dict[str, Any]:
         """Convert openapi-core Schema object to dict for hypothesis."""
         # This would extract the raw schema dict from openapi-core's Schema object
         # The actual implementation depends on openapi-core's internal structure
         return schema.raw  # or schema.__dict__ depending on the version
-        
+
     def _generate_simple_value(self, schema: Schema) -> Any:
         """Generate a simple value for headers based on schema."""
         if schema.enum:
@@ -315,11 +315,11 @@ class SchemaValidator:
         self.spec = spec
         self.request_validator = openapi_request_validator(spec)
         self.response_validator = openapi_response_validator(spec)
-        
+
     def validate_request(self, openapi_request: OpenAPIRequest) -> List[str]:
         """Validate request using openapi-core."""
         errors = []
-        
+
         try:
             # openapi-core handles all validation including:
             # - path parameters
@@ -328,21 +328,21 @@ class SchemaValidator:
             # - request body
             # - content type
             result = self.request_validator.validate(openapi_request)
-            
+
             # Check for validation errors
             if result.errors:
                 for error in result.errors:
                     errors.append(str(error))
-                    
+
         except OpenAPIError as e:
             errors.append(f"Request validation error: {str(e)}")
-            
+
         return errors
-        
+
     def validate_response(self, openapi_request: OpenAPIRequest, openapi_response: OpenAPIResponse) -> List[str]:
         """Validate response using openapi-core."""
         errors = []
-        
+
         try:
             # openapi-core validates:
             # - response status code
@@ -350,14 +350,14 @@ class SchemaValidator:
             # - response body against schema
             # - content type
             result = self.response_validator.validate(openapi_request, openapi_response)
-            
+
             if result.errors:
                 for error in result.errors:
                     errors.append(str(error))
-                    
+
         except OpenAPIError as e:
             errors.append(f"Response validation error: {str(e)}")
-            
+
         return errors
 ```
 
@@ -392,10 +392,10 @@ class OpenAPIMocker:
         self.options = options
         self.responses_mock = responses.RequestsMock()
         self.overrides = {}
-        
+
         if spec_path:
             self.load_spec(spec_path)
-            
+
     def load_spec(self, spec_path: str):
         """Load OpenAPI specification."""
         self.spec = self.parser.load_spec(spec_path)
@@ -403,14 +403,14 @@ class OpenAPIMocker:
         self.matcher = RequestMatcher(self.spec)
         self.validator = SchemaValidator(self.spec)
         self._register_routes()
-        
+
     def _register_routes(self):
         """Register all routes from OpenAPI spec with responses."""
         for path, path_item in self.spec.paths.items():
             for method in path_item.operations:
                 operation = path_item.operations[method]
                 self._register_operation(method.upper(), path, operation)
-                    
+
     def _register_operation(self, method: str, path: str, operation: Any):
         """Register a single operation with responses."""
         def callback(request):
@@ -418,19 +418,19 @@ class OpenAPIMocker:
             override_key = f"{method}:{path}"
             if override_key in self.overrides:
                 return self.overrides[override_key]
-                
+
             # Convert to OpenAPI request for validation
             openapi_request = RequestsOpenAPIRequest(request)
-            
+
             # Validate request if enabled
             if self.options.get("validate_requests"):
                 errors = self.validator.validate_request(openapi_request)
                 if errors:
                     return (400, {}, json.dumps({"errors": errors}))
-                    
+
             # Generate response
             response_data = self.generator.generate_response(operation)
-            
+
             # Validate response if enabled
             if self.options.get("validate_responses"):
                 # Create OpenAPI response for validation
@@ -442,34 +442,34 @@ class OpenAPIMocker:
                 errors = self.validator.validate_response(openapi_request, openapi_response)
                 if errors:
                     raise ValueError(f"Generated invalid response: {errors}")
-                    
+
             return (
-                response_data["status"], 
-                response_data.get("headers", {}), 
+                response_data["status"],
+                response_data.get("headers", {}),
                 json.dumps(response_data.get("json"))
             )
-            
+
         # Convert OpenAPI path to regex pattern for responses
         # {param} -> (?P<param>[^/]+)
         regex_path = re.sub(r'\{([^}]+)\}', r'(?P<\1>[^/]+)', path)
-        
+
         # Build full URL pattern
         base_url = self.options.get("base_url", "")
         if base_url:
             full_pattern = f"{base_url.rstrip('/')}{regex_path}"
         else:
             full_pattern = f".*{regex_path}"
-            
+
         self.responses_mock.add_callback(
             method,
             re.compile(full_pattern),
             callback=callback
         )
-        
+
     def override(self, method: str, path: str, **response_kwargs):
         """Override a specific endpoint's response."""
         self.overrides[f"{method}:{path}"] = response_kwargs
-        
+
     def set_response_code(self, method: str, path: str, status_code: int):
         """Set specific status code for an endpoint."""
         operation = self.spec.paths[path].operations[method.lower()]
@@ -479,17 +479,17 @@ class OpenAPIMocker:
             response_data.get("headers", {}),
             json.dumps(response_data.get("json"))
         )
-        
+
     def __enter__(self):
         """Start mocking."""
         self.responses_mock.start()
         return self
-        
+
     def __exit__(self, *args):
         """Stop mocking."""
         self.responses_mock.stop()
         self.responses_mock.reset()
-        
+
     def cleanup(self):
         """Clean up resources."""
         self.responses_mock.reset()

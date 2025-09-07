@@ -35,7 +35,7 @@ import requests
 def test_get_pet():
     # The mock is automatically configured based on your OpenAPI spec
     response = requests.get("https://api.example.com/pets/123")
-    
+
     assert response.status_code == 200
     assert "name" in response.json()
     assert "id" in response.json()
@@ -60,7 +60,7 @@ def test_create_pet(api_mock):
             "https://api.example.com/pets",
             json={"name": "Fluffy", "type": "cat"}
         )
-        
+
         assert response.status_code == 201
         assert response.json()["name"] == "Fluffy"
 ```
@@ -85,12 +85,12 @@ def test_api_with_validation():
 def test_custom_response(api_mock):
     # Override specific responses while keeping others auto-mocked
     api_mock.override(
-        "GET", 
+        "GET",
         "/pets/123",
         json={"id": 123, "name": "Custom Pet", "status": "sold"},
         status=200
     )
-    
+
     with api_mock:
         response = requests.get("https://api.example.com/pets/123")
         assert response.json()["name"] == "Custom Pet"
@@ -102,7 +102,7 @@ def test_custom_response(api_mock):
 def test_error_response(api_mock):
     # Automatically use error responses defined in your OpenAPI spec
     api_mock.set_response_code("GET", "/pets/{petId}", 404)
-    
+
     with api_mock:
         response = requests.get("https://api.example.com/pets/999")
         assert response.status_code == 404
@@ -171,7 +171,7 @@ def test_mixed_mocking(api_mock):
             json={"custom": "data"},
             status=200
         )
-        
+
         # Both OpenAPI mocks and custom mocks work together
         resp1 = requests.get("https://api.example.com/pets")  # OpenAPI mock
         resp2 = requests.get("https://external-api.com/data")  # Custom mock
