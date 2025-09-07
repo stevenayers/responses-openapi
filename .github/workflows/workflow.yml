@@ -47,12 +47,18 @@ jobs:
         uv run coverage xml
         uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()  # Run even if tests fail
       with:
-        name: test-results-${{ matrix.python-version }}
-        path: test-results/**/*.xml
+        files: |
+          test-results/**/*.xml
+        check_name: Behave Test Results - Python ${{ matrix.python-version }}
+        comment_title: Behave Test Results
+        comment_mode: always
+        compare_to_earlier_commit: true
+        report_individual_runs: true
+        report_suite_logs: 'info'
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
