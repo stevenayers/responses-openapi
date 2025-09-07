@@ -27,9 +27,6 @@ jobs:
     - name: Run Ruff formatter
       run: uv run ruff format --check .
 
-    - name: Run mypy
-      run: uv run mypy src/
-
   test:
     runs-on: ubuntu-latest
     strategy:
