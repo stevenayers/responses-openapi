@@ -38,13 +38,34 @@ behave --stop
 ### Code Quality
 ```bash
 # Run linter
-ruff check .
+uv run ruff check .
 
 # Auto-fix linting issues
-ruff check --fix .
+uv run ruff check --fix .
 
 # Format code
-ruff format .
+uv run ruff format .
+
+# Check formatting without applying changes
+uv run ruff format --check .
+
+# Run type checking
+uv run mypy src/
+
+# Run security checks
+uv run bandit -r src/
+uv run safety check
+
+# Run coverage report
+uv run coverage run --source=src -m behave
+uv run coverage report
+uv run coverage xml
+
+# Run pre-commit hooks on all files
+pre-commit run --all-files
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
 ## Architecture
