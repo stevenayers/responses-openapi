@@ -6,11 +6,13 @@ of HTTP responses based on OpenAPI specifications.
 """
 
 import json
+import random
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import responses
 import yaml
+from faker import Faker
 from requests import PreparedRequest
 
 
@@ -38,6 +40,11 @@ class OpenAPIMocker:
         self.spec: Optional[Dict[str, Any]] = None
         self.options = options
         self.responses_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
+        self.faker = Faker(self.options.get("faker_locale", "en_US"))
+        # Set seed for reproducible tests if provided
+        if "faker_seed" in self.options:
+            Faker.seed(self.options["faker_seed"])
+            random.seed(self.options["faker_seed"])
 
         if spec_path:
             self.load_spec(spec_path)
@@ -132,7 +139,7 @@ class OpenAPIMocker:
 
     def _generate_from_schema(self, schema: Dict[str, Any]) -> Any:
         """
-        Generate minimal data from a JSON schema.
+        Generate realistic data from a JSON schema using Faker.
 
         :param schema: JSON schema
         :type schema: Dict[str, Any]
@@ -153,31 +160,149 @@ class OpenAPIMocker:
 
         if schema_type == "array":
             items_schema = schema.get("items", {})
-            # Generate 2 items for arrays
-            return [self._generate_from_schema(items_schema) for _ in range(2)]
+            # Generate random number of items (1-3)
+            min_items = schema.get("minItems", 1)
+            max_items = schema.get("maxItems", 3)
+            num_items = random.randint(min_items, min(max_items, 3))
+            return [self._generate_from_schema(items_schema) for _ in range(num_items)]
 
         elif schema_type == "object":
             result = {}
             properties = schema.get("properties", {})
+            required_fields = schema.get("required", [])
+
             for prop_name, prop_schema in properties.items():
-                result[prop_name] = self._generate_from_schema(prop_schema)
+                # Always include required fields, randomly include optional ones
+                if prop_name in required_fields or random.random() > 0.3:
+                    result[prop_name] = self._generate_from_schema(prop_schema)
             return result
 
         elif schema_type == "string":
-            if "enum" in schema:
-                return schema["enum"][0]
-            return "string_value"
+            return self._generate_string(schema)
 
         elif schema_type == "integer":
-            return 42
+            return self._generate_integer(schema)
 
         elif schema_type == "number":
-            return 3.14
+            return self._generate_number(schema)
 
         elif schema_type == "boolean":
-            return True
+            return self.faker.boolean()
 
         return None
+
+    def _generate_string(self, schema: Dict[str, Any]) -> str:
+        """
+        Generate a realistic string based on schema constraints.
+
+        :param schema: String schema
+        :type schema: Dict[str, Any]
+        :returns: Generated string
+        :rtype: str
+        """
+        # Handle enum
+        if "enum" in schema:
+            return random.choice(schema["enum"])
+
+        # Handle format
+        format_type = schema.get("format", "")
+
+        if format_type == "email":
+            return self.faker.email()
+        elif format_type == "uuid":
+            return str(self.faker.uuid4())
+        elif format_type == "date":
+            return self.faker.date()
+        elif format_type == "date-time":
+            return self.faker.iso8601()
+        elif format_type == "uri" or format_type == "url":
+            return self.faker.url()
+        elif format_type == "ipv4":
+            return self.faker.ipv4()
+        elif format_type == "ipv6":
+            return self.faker.ipv6()
+
+        # Handle pattern (simplified - just use appropriate faker)
+        pattern = schema.get("pattern", "")
+
+        # Generate based on common property names
+        # This is a heuristic approach for better mock data
+        if "name" in pattern.lower() or "name" in str(schema.get("description", "")).lower():
+            return self.faker.name()
+
+        # Handle length constraints
+        max_length = schema.get("maxLength", 50)
+
+        # Generate a reasonable string
+        if max_length <= 10:
+            return self.faker.word()[:max_length]
+        elif max_length <= 50:
+            return self.faker.sentence(nb_words=3)[:max_length]
+        else:
+            return self.faker.text(max_nb_chars=min(max_length, 200))
+
+    def _generate_integer(self, schema: Dict[str, Any]) -> int:
+        """
+        Generate a realistic integer based on schema constraints.
+
+        :param schema: Integer schema
+        :type schema: Dict[str, Any]
+        :returns: Generated integer
+        :rtype: int
+        """
+        # Handle enum
+        if "enum" in schema:
+            return random.choice(schema["enum"])
+
+        # Get constraints
+        minimum = schema.get("minimum", 0)
+        maximum = schema.get("maximum", 10000)
+
+        # Handle exclusive bounds
+        if schema.get("exclusiveMinimum"):
+            minimum += 1
+        if schema.get("exclusiveMaximum"):
+            maximum -= 1
+
+        # Handle format hints
+        format_type = schema.get("format", "")
+
+        if format_type == "int64":
+            # Generate larger numbers for int64
+            if maximum == 10000 and minimum == 0:  # No explicit constraints
+                return self.faker.random_int(min=1, max=999999)
+        elif format_type == "int32":
+            # Keep within int32 bounds
+            maximum = min(maximum, 2147483647)
+            minimum = max(minimum, -2147483648)
+
+        return self.faker.random_int(min=minimum, max=maximum)
+
+    def _generate_number(self, schema: Dict[str, Any]) -> float:
+        """
+        Generate a realistic number based on schema constraints.
+
+        :param schema: Number schema
+        :type schema: Dict[str, Any]
+        :returns: Generated number
+        :rtype: float
+        """
+        # Handle enum
+        if "enum" in schema:
+            return random.choice(schema["enum"])
+
+        # Get constraints
+        minimum = schema.get("minimum", 0.0)
+        maximum = schema.get("maximum", 1000.0)
+
+        # Handle exclusive bounds
+        if schema.get("exclusiveMinimum"):
+            minimum += 0.01
+        if schema.get("exclusiveMaximum"):
+            maximum -= 0.01
+
+        # Generate and round to 2 decimal places
+        return round(random.uniform(minimum, maximum), 2)
 
     def start(self) -> None:
         """
