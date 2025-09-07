@@ -12,6 +12,7 @@ dependencies = [
 [dependency-groups]
 test = [
     "behave>=1.3.3",
+    "coverage[toml]>=7.10.6",
 ]
 
 [build-system]
@@ -24,3 +25,24 @@ path = "src/responses_openapi/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/responses_openapi"]
+
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
