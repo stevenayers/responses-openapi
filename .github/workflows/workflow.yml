@@ -22,7 +22,7 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
     
     - name: Install dependencies
-      run: uv sync --all-extras --dev --all-groups
+      run: uv sync
     
     - name: Run behave tests with coverage
       run: |
@@ -60,7 +60,7 @@ jobs:
     
     - name: Run security checks
       run: |
-        uv pip install bandit[toml] safety
+        uv sync
         uv run bandit -r src/
         uv run safety check
     
