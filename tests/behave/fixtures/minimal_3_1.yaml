@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Minimal OpenAPI 3.1 Test API
+  version: 1.0.0
+  description: A minimal OpenAPI 3.1 spec for testing 3.1 support
+
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List all pets
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string

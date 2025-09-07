@@ -1,0 +1,6 @@
+# This is an invalid OpenAPI specification for testing error handling
+not_openapi: invalid
+missing: required fields
+no_version: true
+paths:
+  without_proper_structure: true

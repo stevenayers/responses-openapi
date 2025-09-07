@@ -1,0 +1,32 @@
+openapi: 3.0.0
+info:
+  title: External References Test API
+  version: 1.0.0
+  description: API with external file references for testing
+
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/pet.yaml'
+
+  /users:
+    get:
+      operationId: listUsers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/user.yaml'

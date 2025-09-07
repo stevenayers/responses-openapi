@@ -1,4 +1,7 @@
-def say_hello(name: str | None) -> str:
+from typing import Optional
+
+
+def say_hello(name: Optional[str]) -> str:
     """
     Says hello
     :param name: Name to greet

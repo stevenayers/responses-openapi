@@ -23,7 +23,7 @@ source .venv/bin/activate
 behave
 
 # Run specific feature file
-behave features/feature_name.feature
+behave tests/behave/feature_name.feature
 
 # Run with specific tags
 behave --tags=@tag_name
@@ -105,3 +105,94 @@ The project uses Behave for BDD (Behavior-Driven Development) testing. When impl
 4. Add integration tests for component interactions
 5. Include end-to-end tests with real OpenAPI specs (e.g., Petstore)
 6. Ensure all tests pass before committing changes
+
+### TDD Process
+ALWAYS follow Test-Driven Development (TDD) with Behave:
+1. **Red**: Write failing Behave tests first before implementing any functionality
+2. **Green**: Write minimal code to make the tests pass
+3. **Refactor**: Improve the code while keeping tests green
+4. Never write implementation code without corresponding Behave tests already in place
+
+## Code Style Guidelines
+
+### Type Hints
+ALL functions in `src/` MUST include complete type hints for:
+- All function arguments
+- All keyword arguments
+- Return types
+- Use `Optional[]` for nullable types
+- Use `Union[]` for multiple possible types
+- Import types from `typing` module as needed
+
+Example:
+```python
+from typing import Optional, Dict, Any, List
+
+def process_data(
+    input_data: Dict[str, Any],
+    validate: bool = True,
+    max_items: Optional[int] = None
+) -> List[str]:
+    ...
+```
+
+### Docstrings
+ALL functions and classes in `src/` MUST include reStructuredText (reST) style docstrings:
+
+```python
+def function_name(arg1: str, arg2: int, optional: bool = False) -> Dict[str, Any]:
+    """
+    Brief description of the function.
+
+    Longer description if needed, explaining the purpose
+    and behavior of the function.
+
+    :param arg1: Description of arg1
+    :type arg1: str
+    :param arg2: Description of arg2
+    :type arg2: int
+    :param optional: Description of optional parameter, defaults to False
+    :type optional: bool, optional
+    :returns: Description of return value
+    :rtype: Dict[str, Any]
+    :raises ValueError: When input validation fails
+    :raises KeyError: When required keys are missing
+
+    .. code-block:: python
+
+        result = function_name("test", 42)
+        print(result)
+        # Output: {'status': 'success'}
+    """
+    ...
+```
+
+For classes:
+```python
+class MyClass:
+    """
+    Brief description of the class.
+
+    Longer description explaining the purpose and usage.
+
+    .. code-block:: python
+
+        obj = MyClass("test", 123)
+        obj.method()
+    """
+
+    def __init__(self, param1: str, param2: int, optional_param: bool = None):
+        """
+        Initialize MyClass.
+
+        :param param1: Description of initialization parameter
+        :type param1: str
+        :param param2: Description of another parameter
+        :type param2: int
+        :param optional_param: Description of optional parameter, defaults to None
+        :type optional_param: bool, optional
+        :raises ValueError: When param2 is negative
+        """
+        # Implementation here
+        pass
+```
