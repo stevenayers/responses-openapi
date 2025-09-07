@@ -20,16 +20,19 @@ source .venv/bin/activate
 ### Running Tests
 ```bash
 # Run all tests
-pytest
+behave
 
-# Run specific test file
-pytest tests/test_file.py
+# Run specific feature file
+behave features/feature_name.feature
 
-# Run with coverage
-pytest --cov=src/responses_openapi
+# Run with specific tags
+behave --tags=@tag_name
 
 # Run with verbose output
-pytest -v
+behave -v
+
+# Run and stop on first failure
+behave --stop
 ```
 
 ### Code Quality
@@ -74,8 +77,10 @@ The project follows a modular architecture with the following core components:
 
 ## Testing Strategy
 
-When implementing features:
-1. Create unit tests for individual components in isolation
-2. Add integration tests for component interactions
-3. Include end-to-end tests with real OpenAPI specs (e.g., Petstore)
-4. Ensure all tests pass before committing changes
+The project uses Behave for BDD (Behavior-Driven Development) testing. When implementing features:
+1. Write feature files in Gherkin syntax describing the behavior
+2. Implement step definitions for the scenarios
+3. Create unit tests for individual components in isolation
+4. Add integration tests for component interactions
+5. Include end-to-end tests with real OpenAPI specs (e.g., Petstore)
+6. Ensure all tests pass before committing changes
