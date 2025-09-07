@@ -7,10 +7,11 @@ of HTTP responses based on OpenAPI specifications.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import responses
 import yaml
+from requests import PreparedRequest
 
 
 class OpenAPIMocker:
@@ -36,7 +37,7 @@ class OpenAPIMocker:
         self.spec_path = spec_path
         self.spec: Optional[Dict[str, Any]] = None
         self.options = options
-        self.responses_mock = responses.RequestsMock()
+        self.responses_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
 
         if spec_path:
             self.load_spec(spec_path)
@@ -99,7 +100,7 @@ class OpenAPIMocker:
         regex_path = re.sub(r"\{([^}]+)\}", r"(?P<\1>[^/]+)", path)
         full_url = f"{base_url.rstrip('/')}{regex_path}"
 
-        def callback(request):
+        def callback(request: PreparedRequest) -> Tuple[int, Dict[str, str], str]:
             # Generate a simple response based on the spec
             responses_spec = operation.get("responses", {})
 
@@ -125,7 +126,7 @@ class OpenAPIMocker:
                     schema = json_content["schema"]
                     response_body = self._generate_from_schema(schema)
 
-            return (200, {}, json.dumps(response_body))
+            return 200, {}, json.dumps(response_body)
 
         self.responses_mock.add_callback(method, re.compile(full_url), callback=callback)
 
@@ -188,7 +189,11 @@ class OpenAPIMocker:
         """
         Stop mocking HTTP responses.
         """
-        self.responses_mock.stop(assert_all_requests_are_fired=False)
+        try:
+            self.responses_mock.stop()
+        except TypeError:
+            # Older versions of responses don't have this parameter
+            self.responses_mock.stop()
 
     def cleanup(self) -> None:
         """

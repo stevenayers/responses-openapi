@@ -14,6 +14,9 @@ dependencies = [
     "responses>=0.25.8",
 ]
 
+[project.entry-points.pytest11]
+responses_openapi = "responses_openapi.plugin"
+
 [dependency-groups]
 dev = [
     "behave>=1.3.3",

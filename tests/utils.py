@@ -50,7 +50,7 @@ def get_fixtures_dir() -> Path:
     :returns: Path to the fixtures directory
     :rtype: Path
     """
-    return Path(__file__).parent.parent / 'fixtures'
+    return Path(__file__).parent / 'fixtures'
 
 
 def get_test_spec_path(spec_name: str) -> Path:
