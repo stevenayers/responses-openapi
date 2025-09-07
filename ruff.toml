@@ -1,0 +1,55 @@
+# Ruff configuration for EDP project
+target-version = "py311"
+line-length = 120
+
+# Exclude commonly ignored directories
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "dbt/",  # Exclude DBT files from linting
+    "tests/",  # Exclude test files from linting
+    "src/dagster_airbyte/",
+]
+
+[lint]
+# Relaxed rule set that focuses on common issues
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear (basic bug detection)
+]
+ignore = [
+    "E203",
+    "E501",
+    "B008",
+    "B023",
+    "B006",
+    "E722"
+]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.isort]
+known-first-party = ["dagster_edp"]
+known-third-party = ["dagster", "dagster_cloud", "dagster_dbt", "dagster_dg", "dagster_dlt", "dbt", "dlt"]
